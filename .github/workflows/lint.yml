@@ -22,17 +22,39 @@ jobs:
 
       - name: Check PHP syntax (local plugin)
         run: |
-          find local/securevideo -name "*.php" -exec php -l {} \; | grep -v "^No syntax"
-          echo "local/securevideo: syntax OK"
+          ERRORS=0
+          while IFS= read -r file; do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              php -l "$file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find local/securevideo -name "*.php")
+          if [ "$ERRORS" -eq 0 ]; then
+            echo "local/securevideo: all files OK"
+          else
+            echo "local/securevideo: $ERRORS file(s) with syntax errors"
+            exit 1
+          fi
 
       - name: Check PHP syntax (activity module)
         run: |
-          find mod/securevideo -name "*.php" -exec php -l {} \; | grep -v "^No syntax"
-          echo "mod/securevideo: syntax OK"
+          ERRORS=0
+          while IFS= read -r file; do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              php -l "$file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find mod/securevideo -name "*.php")
+          if [ "$ERRORS" -eq 0 ]; then
+            echo "mod/securevideo: all files OK"
+          else
+            echo "mod/securevideo: $ERRORS file(s) with syntax errors"
+            exit 1
+          fi
 
       - name: Check for sensitive data
         run: |
-          if grep -r "password.*=.*['\"].\+['\"]" local/ mod/ --include="*.php"; then
+          if grep -rn "password[[:space:]]*=[[:space:]]*['\"][^'\"]\+['\"]" local/ mod/ --include="*.php"; then
             echo "WARNING: Possible hardcoded password found"
             exit 1
           fi
