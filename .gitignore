@@ -1,0 +1,59 @@
+# ============================================================
+#  moodle-securevideo — .gitignore
+# ============================================================
+
+# Test server & development files
+/test/
+test_*.php
+gen_thumbs.php
+
+# Logs
+*.log
+security_events.log
+
+# Video and HLS media files (never commit media)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.ts
+*.m3u8
+enc.key
+*.key
+*.keyinfo
+
+# Moodle local data directories
+/moodledata/
+/videos/
+
+# Database snapshot files (test server)
+db.json
+videos.json
+
+# Environment / local config
+.env
+.env.local
+.env.*.local
+config.local.php
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# PHP build artifacts
+/vendor/
+composer.lock

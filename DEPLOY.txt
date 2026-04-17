@@ -1,0 +1,209 @@
+=====================================================
+  SECURE VIDEO PLAYER - Moodle Plugin Deployment
+=====================================================
+
+WHAT THIS PLUGIN DOES:
+- Lets you upload videos that get converted to encrypted HLS streams
+- Serves videos through a session-authenticated proxy (no direct file URLs)
+- Shows a dynamic watermark with the viewer's name + unique tracking code
+- Blocks right-click, download button, keyboard shortcuts, devtools
+- Logs every access with a unique code so leaked recordings are traceable
+
+REQUIREMENTS:
+- Moodle 4.0+ on your EC2 instance
+- FFmpeg installed on the server
+- PHP with exec() enabled
+
+=====================================================
+STEP 1: Install FFmpeg on EC2 (Amazon Linux / Ubuntu)
+=====================================================
+
+For Amazon Linux 2:
+  sudo amazon-linux-extras install epel -y
+  sudo yum install ffmpeg ffmpeg-devel -y
+
+For Ubuntu:
+  sudo apt update
+  sudo apt install ffmpeg -y
+
+Verify:
+  ffmpeg -version
+
+=====================================================
+STEP 2: Upload the plugin to Moodle
+=====================================================
+
+Copy the "local/securevideo" folder to your Moodle installation:
+
+  scp -r -i your-key.pem local/securevideo ec2-user@YOUR-EC2-IP:/path/to/moodle/local/
+
+Or if you have SSH access:
+  cd /path/to/moodle
+  # Upload/copy the local/securevideo directory here
+
+Set permissions:
+  sudo chown -R www-data:www-data /path/to/moodle/local/securevideo
+  (use apache:apache on Amazon Linux instead of www-data)
+
+=====================================================
+STEP 3: Create storage directories
+=====================================================
+
+  sudo mkdir -p /path/to/moodledata/securevideo/{original,hls}
+  sudo chown -R www-data:www-data /path/to/moodledata/securevideo
+  sudo chmod -R 770 /path/to/moodledata/securevideo
+
+=====================================================
+STEP 4: Install the plugin in Moodle
+=====================================================
+
+1. Log into Moodle as admin
+2. Go to Site Administration > Notifications
+3. Moodle will detect the new plugin and prompt to install
+4. Click "Upgrade Moodle database now"
+
+=====================================================
+STEP 5: Configure the plugin
+=====================================================
+
+Go to: Site Administration > Plugins > Local plugins > Secure Video Player
+
+Set:
+- FFmpeg path:        /usr/bin/ffmpeg (or wherever ffmpeg is installed)
+- Token secret:       (auto-generated, but you can change it)
+- Token expiry:       14400 (4 hours, adjust as needed)
+- Watermark opacity:  15 (adjust 5-50)
+
+=====================================================
+STEP 6: PHP Upload Limits
+=====================================================
+
+Edit php.ini (or create .htaccess) to allow large video uploads:
+
+  upload_max_filesize = 500M
+  post_max_size = 512M
+  max_execution_time = 600
+  max_input_time = 600
+
+Then restart Apache/Nginx:
+  sudo systemctl restart httpd   (Amazon Linux)
+  sudo systemctl restart apache2 (Ubuntu)
+
+=====================================================
+STEP 7: Upload and embed videos
+=====================================================
+
+1. Go to: YOUR-MOODLE-URL/local/securevideo/manage.php
+2. Upload a video (MP4 recommended)
+3. Wait for HLS conversion to complete (status changes to "Ready")
+4. Copy the embed code (iframe snippet)
+5. Paste it into any Moodle course page/activity using the HTML editor
+   (Make sure to switch to HTML/source mode in the editor)
+
+=====================================================
+STEP 8: Allow iframes in Moodle (IMPORTANT)
+=====================================================
+
+By default Moodle strips iframes. To allow your secure player:
+
+Go to: Site Administration > Security > HTTP Security
+Add your Moodle domain to "Allowed frame ancestors"
+
+OR go to: Site Administration > Appearance > HTML settings
+Under "Trusted content", enable iframes for editing teachers.
+
+=====================================================
+HOW THE ANTI-PIRACY TRACKING WORKS
+=====================================================
+
+Every time a user watches a video, a unique 8-character code is generated
+and stored in the database along with:
+- The user's ID and full name
+- The video they watched
+- Their IP address
+- Timestamp
+
+This code appears in the watermark overlay. If a recording leaks:
+1. Read the code from the recording
+2. Query the database:
+   SELECT u.firstname, u.lastname, a.ip, a.timecreated
+   FROM mdl_local_securevideo_access a
+   JOIN mdl_user u ON u.id = a.userid
+   WHERE a.accesscode = 'THE_CODE';
+3. You now know exactly who recorded it.
+
+=====================================================
+SECURITY EVENT LOG
+=====================================================
+
+All security events are logged to:
+  /path/to/moodledata/securevideo/security_events.log
+
+Each line is a JSON object with: timestamp, userid, username,
+fullname, videoid, event type, access code, details, IP, user agent.
+
+Event types logged:
+- screen_capture_api      (browser getDisplayMedia called)
+- screen_capture_permission (display-capture permission granted)
+- webrtc_screen_share     (screen track added to WebRTC)
+- recording_extension     (Loom, Screencastify, etc. detected)
+- devtools_opened         (developer tools detected)
+- tab_hidden              (user switched away from tab)
+- suspicious_blur         (frequent window focus changes)
+- print_screen            (PrintScreen key pressed)
+- print_attempt           (Ctrl+P / print dialog)
+- blocked_shortcut        (Ctrl+S, Ctrl+U, F12, etc.)
+- watermark_tamper        (watermark element removed/hidden)
+- heartbeat               (periodic check-in while playing)
+
+=====================================================
+SECURITY LAYERS SUMMARY (22 LAYERS)
+=====================================================
+
+--- VIDEO ENCRYPTION & DELIVERY ---
+1.  AES-128 encrypted HLS segments (ffmpeg encryption)
+2.  All files served through PHP proxy with session + HMAC token
+3.  No direct filesystem access to video files
+4.  Time-limited HMAC tokens (expire after 4h, configurable)
+
+--- VISIBLE WATERMARK ---
+5.  Dynamic watermark: user's full name + unique 8-char tracking code
+6.  7 simultaneous watermark positions (impossible to crop all)
+7.  Positions shuffle every 8 seconds with random rotation
+8.  Watermark flashes brighter on PrintScreen
+
+--- INVISIBLE FORENSIC WATERMARK ---
+9.  CSS forensic layer: 36-cell grid of near-invisible text (survives compression)
+10. Canvas pixel watermark: unique dot pattern per user at pixel level
+11. Mix-blend-mode overlay: invisible to eye, visible in compressed recordings
+
+--- SCREEN RECORDING DETECTION ---
+12. getDisplayMedia API intercepted and blocked
+13. getUserMedia display surface detection
+14. Permissions API: display-capture permission monitoring
+15. WebRTC screen share track detection
+16. Recording extension detection (Loom, Screencastify, Nimbus, etc.)
+17. Tab visibility detection (pauses on tab switch)
+18. Window blur frequency monitoring (flags suspicious alt-tabbing)
+
+--- ANTI-INSPECTION ---
+19. DevTools detection (3 methods: size, debugger timing, console trap)
+20. Keyboard shortcut blocking (Ctrl+S/U/P/A, Ctrl+Shift+I/J/C/K, F12)
+21. PrintScreen detection + clipboard overwrite
+
+--- ANTI-TAMPERING ---
+22. MutationObserver: detects removal or hiding of watermark elements
+    (kills video permanently if watermark is tampered with)
+
+--- OTHER PROTECTIONS ---
+- Right-click disabled
+- Download button hidden (Chrome CSS hack)
+- Picture-in-Picture disabled
+- Drag disabled
+- Text selection disabled
+- X-Frame-Options: SAMEORIGIN
+- CSP headers restricting resource loading
+- Permissions-Policy: display-capture=() header
+- Full access audit log with IP + user agent
+- Security event log with all violation details
+- 60-second heartbeat while video plays
