@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/securevideo/db" VERSION="2026032601" COMMENT="Secure Video activity instances">
+  <TABLES>
+    <TABLE NAME="securevideo" COMMENT="One row per activity instance placed in a course">
+      <FIELDS>
+        <FIELD NAME="id"               TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course"           TYPE="int"  LENGTH="10" NOTNULL="true" COMMENT="FK to course"/>
+        <FIELD NAME="name"             TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="intro"            TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="introformat"      TYPE="int"  LENGTH="4"  NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="playlistid"       TYPE="int"  LENGTH="10" NOTNULL="true" COMMENT="FK to local_securevideo_plists"/>
+        <FIELD NAME="completionpercent" TYPE="int" LENGTH="3"  NOTNULL="true" DEFAULT="90" COMMENT="% watched to auto-complete"/>
+        <FIELD NAME="timecreated"      TYPE="int"  LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified"     TYPE="int"  LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_course" UNIQUE="false" FIELDS="course"/>
+        <INDEX NAME="idx_playlist" UNIQUE="false" FIELDS="playlistid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

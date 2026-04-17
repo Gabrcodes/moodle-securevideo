@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Video screen / monitor body -->
+  <rect x="8" y="14" width="72" height="52" rx="5" ry="5" fill="#1a1a2e"/>
+  <!-- Screen glare / inner screen -->
+  <rect x="13" y="19" width="62" height="42" rx="3" ry="3" fill="#16213e"/>
+  <!-- Play button triangle -->
+  <polygon points="35,28 35,52 61,40" fill="#FFED00"/>
+  <!-- Viewfinder notches on top of monitor (camera look) -->
+  <rect x="8" y="10" width="8" height="8" rx="2" fill="#1a1a2e"/>
+  <rect x="28" y="10" width="8" height="8" rx="2" fill="#1a1a2e"/>
+  <rect x="52" y="10" width="8" height="8" rx="2" fill="#1a1a2e"/>
+  <rect x="72" y="10" width="8" height="8" rx="2" fill="#1a1a2e"/>
+  <!-- Shield / lock overlay (bottom right of screen) -->
+  <path d="M68,44 L68,44 C68,44 60,41 60,35 L60,30 L76,30 L76,35 C76,41 68,44 68,44 Z" fill="#FFED00"/>
+  <rect x="64" y="34" width="8" height="6" rx="1" fill="#1a1a2e"/>
+  <circle cx="68" cy="33" r="3" fill="none" stroke="#1a1a2e" stroke-width="2"/>
+  <!-- Stand / base -->
+  <rect x="38" y="66" width="12" height="8" fill="#1a1a2e"/>
+  <rect x="28" y="72" width="32" height="5" rx="2" fill="#1a1a2e"/>
+</svg>
